@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { executeStoredProcedure } from '../config/sqlServer';
+import { AuthRequest } from '../types/express';
 
 export const register = async (req: Request, res: Response) => {
     try {
@@ -21,10 +22,12 @@ export const register = async (req: Request, res: Response) => {
         });
 
         const user = result.recordset[0];
-
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, { expiresIn: '1h' });
 
-        res.status(201).json({ token });
+        // Don't include the password in the response
+        const { password: userPassword, ...userWithoutPassword } = user;
+        
+        res.status(201).json({ token, user: userWithoutPassword });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -54,7 +57,11 @@ export const login = async (req: Request, res: Response) => {
         }
 
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, { expiresIn: '1h' });
-        res.json({ token });
+        
+        // Don't include the password in the response
+        const { password: userPassword, ...userWithoutPassword } = user;
+        
+        res.json({ token, user: userWithoutPassword });
     } catch (error) {
         console.error("Login error:", error);
         res.status(500).json({ message: 'Server error' });
@@ -113,6 +120,28 @@ export const updateUserRole = async (req: Request, res: Response) => {
         }
     } catch (error) {
         console.error('Error updating user role:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export const getMe = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.user!.id;
+        
+        const result = await executeStoredProcedure('GetUserById', { id: userId });
+        
+        if (result.recordset.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        const user = result.recordset[0];
+        
+        // Don't include the password in the response
+        const { password, ...userWithoutPassword } = user;
+        
+        res.status(200).json({ user: userWithoutPassword });
+    } catch (error) {
+        console.error('Get me error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
