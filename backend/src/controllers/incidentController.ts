@@ -8,25 +8,28 @@ interface CreateIncidentRequest extends AuthRequest {
         title: string;
         description: string;
         category: string;
-        reportedBy: number;
     };
 }
 
 export const createIncident = async (req: CreateIncidentRequest, res: Response) => {
     try {
-        const { title, description, category, reportedBy } = req.body;
+        const userId = req.user?.id;
+        
+        if (!userId) {
+            return res.status(401).json({ message: 'User not authenticated' });
+        }
+        
+        const { title, description, category } = req.body;
 
-        // Create incident first
         const incidentResult = await executeStoredProcedure('CreateIncident', {
             title,
             description,
             category,
-            reportedBy,
+            reportedBy: userId,
         });
 
         const incident = incidentResult.recordset[0];
 
-        // If media file exists, save it to the database
         if (req.file) {
             const mediaType = req.file.mimetype.startsWith('image/') ? 'PHOTO' : 'VIDEO';
             const mediaUrl = `/uploads/${req.file.filename}`;
@@ -40,7 +43,7 @@ export const createIncident = async (req: CreateIncidentRequest, res: Response) 
 
         res.status(201).json(incident);
     } catch (error) {
-        console.error(error);
+        console.error('Create incident error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

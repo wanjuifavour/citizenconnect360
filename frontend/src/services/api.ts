@@ -49,4 +49,18 @@ export const validateToken = async () => {
     return response.data
 }
 
+export const reportIncident = async (formData: FormData) => {
+    const response = await api.post('/incidents/report', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return response.data;
+};
+
+export const getAllIncidents = async () => {
+    const response = await api.get('/incidents/getAll');
+    return response.data;
+};
+
 export default api

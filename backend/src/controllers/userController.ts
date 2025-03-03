@@ -37,20 +37,15 @@ export const register = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
     try {
         const { email, password } = req.body;
-        console.log("Login attempt:", { email });
 
         const result = await executeStoredProcedure('GetUserByEmail', { email });
-        console.log("GetUserByEmail result:", result);
         
         const user = result.recordset[0];
         if (!user) {
-            console.log("No user found with email:", email);
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
-        console.log("Found user:", { id: user.id, email: user.email });
         const isMatch = await bcrypt.compare(password, user.password);
-        console.log("Password match result:", isMatch);
         
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials' });
@@ -58,7 +53,6 @@ export const login = async (req: Request, res: Response) => {
 
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, { expiresIn: '1h' });
         
-        // Don't include the password in the response
         const { password: userPassword, ...userWithoutPassword } = user;
         
         res.json({ token, user: userWithoutPassword });
