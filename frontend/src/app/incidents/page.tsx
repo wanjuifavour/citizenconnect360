@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,12 +11,13 @@ import {
     ModalHeader,
     ModalTitle,
     ModalDescription,
-    ModalFooter,
     ModalTrigger,
 } from "@/components/ui/modal"
 import { useAuth } from "@/lib/auth"
 import { getAllIncidents } from "@/services/api"
 import { toast } from "sonner"
+import { MediaViewer } from "@/components/MediaViewer"
+import { useLoading } from "@/app/ClientLayout"
 
 interface Incident {
     id: number;
@@ -30,27 +31,50 @@ interface Incident {
 }
 
 export default function IncidentsPage() {
-    const { user } = useAuth()
-    const [incidents, setIncidents] = useState<Incident[]>([])
-    const [loading, setLoading] = useState(true)
-    const [searchQuery, setSearchQuery] = useState("")
-    const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null)
+    const { user } = useAuth();
+    const { isLoading, setIsLoading } = useLoading(); // Use the global loading state
+    const [incidents, setIncidents] = useState<Incident[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+    
+    const modalTriggerRef = useRef<HTMLButtonElement>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    
+    const [mediaViewerState, setMediaViewerState] = useState<{
+        isOpen: boolean;
+        mediaItems: Array<{ id: number, url: string, type: string }>;
+        initialIndex: number;
+    } | null>(null);
 
     useEffect(() => {
         const fetchIncidents = async () => {
+            setIsLoading(true);
             try {
-                const data = await getAllIncidents()
-                setIncidents(data)
+                const data = await getAllIncidents();
+                setIncidents(data);
             } catch (error) {
-                console.error('Error fetching incidents:', error)
-                toast.error("Failed to load incidents")
+                console.error('Error fetching incidents:', error);
+                toast.error("Failed to load incidents");
             } finally {
-                setLoading(false)
+                setIsLoading(false);
             }
-        }
+        };
 
-        fetchIncidents()
-    }, [])
+        fetchIncidents();
+    }, [setIsLoading]);
+
+    const openMediaViewer = (mediaItems: Array<{ id: number, url: string, type: string }>, initialIndex: number) => {
+        setMediaViewerState({
+            isOpen: true,
+            mediaItems,
+            initialIndex
+        })
+        setIsModalOpen(false)
+    }
+
+    const closeMediaViewer = () => {
+        setMediaViewerState(null)
+    }
 
     const filteredIncidents = incidents.filter(
         (incident) =>
@@ -58,12 +82,8 @@ export default function IncidentsPage() {
             incident.category.toLowerCase().includes(searchQuery.toLowerCase())
     )
 
-    if (loading) {
-        return <div className="container py-10">Loading incidents...</div>
-    }
-
     return (
-        <div className="container py-10">
+        <div className="container py-10 relative">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold">All Incidents</h1>
                 {user && (
@@ -97,60 +117,87 @@ export default function IncidentsPage() {
                                 <TableCell>{incident.status}</TableCell>
                                 <TableCell>{new Date(incident.createdAt).toLocaleDateString()}</TableCell>
                                 <TableCell>
-                                    <Modal>
+                                    <Modal open={isModalOpen} onOpenChange={setIsModalOpen}>
                                         <ModalTrigger asChild>
-                                            <Button variant="outline" size="sm" onClick={() => setSelectedIncident(incident)}>
+                                            <Button 
+                                                ref={modalTriggerRef}
+                                                variant="outline" 
+                                                size="sm" 
+                                                onClick={() => setSelectedIncident(incident)}
+                                            >
                                                 View More
                                             </Button>
                                         </ModalTrigger>
-                                        <ModalContent>
-                                            <ModalHeader>
-                                                <ModalTitle>{selectedIncident?.title}</ModalTitle>
-                                                <ModalDescription>Incident Details</ModalDescription>
-                                            </ModalHeader>
-                                            <div className="py-4">
-                                                <p>
-                                                    <strong>Category:</strong> {selectedIncident?.category}
-                                                </p>
-                                                <p>
-                                                    <strong>Date:</strong> {selectedIncident?.createdAt && 
-                                                        new Date(selectedIncident.createdAt).toLocaleDateString()}
-                                                </p>
-                                                <p>
-                                                    <strong>Status:</strong> {selectedIncident?.status}
-                                                </p>
-                                                <p>
-                                                    <strong>Description:</strong> {selectedIncident?.description}
-                                                </p>
-                                                {selectedIncident?.media && selectedIncident.media.length > 0 && (
-                                                    <div className="mt-4">
+                                        {selectedIncident && (
+                                            <ModalContent>
+                                                <ModalHeader className="mb-0">
+                                                    <ModalTitle>{selectedIncident.title}</ModalTitle>
+                                                    <ModalDescription>Incident Details</ModalDescription>
+                                                </ModalHeader>
+                                                <div className="items-center justify-items-center py-4">
+                                                    <div className="my-2">
                                                         <strong>Media:</strong>
-                                                        <div className="mt-2 grid grid-cols-2 gap-2">
-                                                            {selectedIncident.media.map((item) => (
-                                                                <div key={item.id}>
-                                                                    {item.type === 'PHOTO' ? (
-                                                                        <img 
-                                                                            src={`http://localhost:8085${item.url}`} 
-                                                                            alt="Incident" 
-                                                                            className="rounded-md max-h-48"
-                                                                        />
-                                                                    ) : (
-                                                                        <video 
-                                                                            src={`http://localhost:8085${item.url}`} 
-                                                                            controls 
-                                                                            className="rounded-md max-h-48"
-                                                                        />
-                                                                    )}
+                                                        {selectedIncident?.media && selectedIncident.media.length > 0 ? (
+                                                            <div className="mt-2 overflow-x-auto">
+                                                                <div className="flex gap-4 pb-2" style={{ minWidth: "min-content" }}>
+                                                                    {selectedIncident.media.map((item, index) => (
+                                                                        <div 
+                                                                            key={item.id} 
+                                                                            className="min-w-[200px] max-w-[300px] cursor-pointer" 
+                                                                            onClick={() => openMediaViewer(selectedIncident.media || [], index)}
+                                                                        >
+                                                                            {item.type === 'PHOTO' ? (
+                                                                                <div className="relative group">
+                                                                                    <img 
+                                                                                        src={`http://localhost:8085${item.url}`} 
+                                                                                        alt="Incident" 
+                                                                                        className="rounded-md w-full h-auto object-cover transition-opacity group-hover:opacity-90"
+                                                                                        style={{ maxHeight: "200px" }}
+                                                                                    />
+                                                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                        <div className="bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                                                                                            View
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="relative group">
+                                                                                    <video 
+                                                                                        src={`http://localhost:8085${item.url}`}
+                                                                                        className="rounded-md w-full transition-opacity group-hover:opacity-90"
+                                                                                        style={{ maxHeight: "200px" }}
+                                                                                    />
+                                                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                        <div className="bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                                                                                            Play
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
-                                                            ))}
-                                                        </div>
+                                                            </div>
+                                                        ) : (
+                                                            <p className="mt-2 text-muted-foreground italic">No media uploaded</p>
+                                                        )}
                                                     </div>
-                                                )}
-                                            </div>
-                                            <ModalFooter>
-                                                <Button variant="outline">Close</Button>
-                                            </ModalFooter>
-                                        </ModalContent>
+                                                    <p>
+                                                        <strong>Category:</strong> {selectedIncident?.category}
+                                                    </p>
+                                                    <p>
+                                                        <strong>Date:</strong> {selectedIncident?.createdAt && 
+                                                            new Date(selectedIncident.createdAt).toLocaleDateString()}
+                                                    </p>
+                                                    <p>
+                                                        <strong>Status:</strong> {selectedIncident?.status}
+                                                    </p>
+                                                    <p>
+                                                        <strong>Description:</strong> {selectedIncident?.description}
+                                                    </p>
+                                                </div>
+                                            </ModalContent>
+                                        )}
                                     </Modal>
                                 </TableCell>
                             </TableRow>
@@ -160,6 +207,16 @@ export default function IncidentsPage() {
             ) : (
                 <p className="text-center py-4">No incidents found matching your search.</p>
             )}
+
+            {/* Media viewer */}
+            {mediaViewerState && (
+                <MediaViewer 
+                    mediaItems={mediaViewerState.mediaItems}
+                    initialIndex={mediaViewerState.initialIndex}
+                    isOpen={mediaViewerState.isOpen}
+                    onClose={closeMediaViewer}
+                />
+            )}
         </div>
-    )
+    );
 }

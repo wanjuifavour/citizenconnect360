@@ -34,8 +34,10 @@ GO
 CREATE PROCEDURE GetIncidents
 AS
 BEGIN
-    SELECT * FROM Incident;
-END;
+    SELECT i.* 
+    FROM Incident i
+    ORDER BY i.createdAt DESC
+END
 GO
 
 -- Update Incident
@@ -72,4 +74,29 @@ BEGIN
     INSERT INTO Media (type, url, incidentId)
     VALUES (@type, @url, @incidentId);
 END;
+GO
+
+-- Create a new stored procedure for getting incidents with media
+CREATE OR ALTER PROCEDURE GetIncidentsWithMedia
+AS
+BEGIN
+    SELECT 
+        i.id, 
+        i.title, 
+        i.description, 
+        i.category, 
+        i.status, 
+        i.reportedBy, 
+        i.createdAt, 
+        i.updatedAt,
+        m.id as media_id,
+        m.type as media_type,
+        m.url as media_url
+    FROM 
+        Incident i
+    LEFT JOIN 
+        Media m ON i.id = m.incidentId
+    ORDER BY 
+        i.createdAt DESC
+END
 GO

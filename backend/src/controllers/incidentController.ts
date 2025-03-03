@@ -3,7 +3,7 @@ import { executeStoredProcedure } from '../config/sqlServer';
 import { AuthRequest } from '../middlewares/authMiddleware';
 
 interface CreateIncidentRequest extends AuthRequest {
-    file?: Express.Multer.File;
+    files?: Express.Multer.File[];
     body: {
         title: string;
         description: string;
@@ -21,6 +21,7 @@ export const createIncident = async (req: CreateIncidentRequest, res: Response) 
         
         const { title, description, category } = req.body;
 
+        // Create the incident first
         const incidentResult = await executeStoredProcedure('CreateIncident', {
             title,
             description,
@@ -30,15 +31,27 @@ export const createIncident = async (req: CreateIncidentRequest, res: Response) 
 
         const incident = incidentResult.recordset[0];
 
-        if (req.file) {
-            const mediaType = req.file.mimetype.startsWith('image/') ? 'PHOTO' : 'VIDEO';
-            const mediaUrl = `/uploads/${req.file.filename}`;
+        // Process all uploaded files if they exist
+        if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+            for (const file of req.files) {
+                const mediaType = file.mimetype.startsWith('image/') ? 'PHOTO' : 'VIDEO';
+                const mediaUrl = `/uploads/${file.filename}`;
 
-            await executeStoredProcedure('AddMediaToIncident', {
-                type: mediaType,
-                url: mediaUrl,
+                await executeStoredProcedure('AddMediaToIncident', {
+                    type: mediaType,
+                    url: mediaUrl,
+                    incidentId: incident.id
+                });
+            }
+            
+            // Get all media for this incident to return in response
+            const mediaResult = await executeStoredProcedure('GetMediaByIncidentId', {
                 incidentId: incident.id
             });
+            
+            incident.media = mediaResult.recordset;
+        } else {
+            incident.media = [];
         }
 
         res.status(201).json(incident);
@@ -50,11 +63,27 @@ export const createIncident = async (req: CreateIncidentRequest, res: Response) 
 
 export const getIncidents = async (req: Request, res: Response) => {
     try {
-        const result = await executeStoredProcedure('GetIncidents');
-        const incidents = result.recordset;
-        res.json(incidents);
+        // Get all incidents
+        const incidentsResult = await executeStoredProcedure('GetIncidents');
+        const incidents = incidentsResult.recordset;
+        
+        // For each incident, get its media
+        const incidentsWithMedia = [];
+        
+        for (const incident of incidents) {
+            const mediaResult = await executeStoredProcedure('GetMediaByIncidentId', {
+                incidentId: incident.id
+            });
+            
+            incidentsWithMedia.push({
+                ...incident,
+                media: mediaResult.recordset
+            });
+        }
+        
+        res.json(incidentsWithMedia);
     } catch (error) {
-        console.error(error);
+        console.error('Get incidents error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
