@@ -12,14 +12,14 @@ node_modules
 !.yarn/versions
 
 # testing
-/coverage
+coverage
 
 # next.js
-/.next/
-/out/
+.next/
+out/
 
 # production
-/build
+build
 
 # misc
 .DS_Store
@@ -45,3 +45,5 @@ next-env.d.ts
 Citizen Baraza.pdf
 
 .vscode
+
+uploads

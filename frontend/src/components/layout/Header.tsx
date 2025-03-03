@@ -15,7 +15,6 @@ interface User {
 
 const Header = () => {
   const pathname = usePathname()
-  // Use the authentication hook inside the component function
   const { user, logout } = useAuth()
 
   return (
@@ -44,11 +43,11 @@ const Header = () => {
         </div>
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center">
-            <ModeToggle />
             {user ? (
               <>
                 <span className="mr-4">{user.name}</span>
-                <Button onClick={logout} variant="outline">Logout</Button>
+                <ModeToggle />
+                <Button onClick={logout} variant="outline" className= "bg-red-500">Logout</Button>
               </>
             ) : (
               <>
@@ -58,6 +57,7 @@ const Header = () => {
                 <Button asChild>
                   <Link href="/register">Register</Link>
                 </Button>
+                <ModeToggle />
               </>
             )}
           </nav>
