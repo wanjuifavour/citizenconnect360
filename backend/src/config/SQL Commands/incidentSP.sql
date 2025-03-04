@@ -55,11 +55,24 @@ BEGIN
 END;
 GO
 
+-- Verify Incident
+CREATE PROCEDURE VerifyIncident
+    @id INT
+AS
+BEGIN
+    UPDATE Incident
+    SET status = 'Verified', 
+        updatedAt = GETDATE()
+    WHERE id = @id;
+END;
+GO
+
 -- Delete Incident
 CREATE PROCEDURE DeleteIncident
     @id INT
 AS
 BEGIN
+    DELETE FROM Media WHERE incidentId = @id;
     DELETE FROM Incident WHERE id = @id;
 END;
 GO
