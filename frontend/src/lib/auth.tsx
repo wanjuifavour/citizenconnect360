@@ -68,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const handleLogout = () => {
+        window.location.href = '/'
         Cookies.remove('token')
         setToken(null)
         setUser(null)
