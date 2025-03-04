@@ -65,7 +65,6 @@ export const reportIncident = async (formData: FormData) => {
         throw new Error('One or more files exceed the 30MB size limit');
       }
     }
-    // Rethrow the error for the component to handle
     throw error;
   }
 };
@@ -78,6 +77,98 @@ export const getAllIncidents = async () => {
     console.error('Error fetching incidents:', error);
     throw error;
   }
+};
+
+export const getPolls = async () => {
+  const response = await api.get('/polls/getAll');
+  return response.data;
+};
+
+export const getPollById = async (id: number) => {
+  const response = await api.get(`/polls/getOne/${id}`);
+  return response.data;
+};
+
+export const createPoll = async (pollData: {
+  title: string;
+  description: string;
+  category: string;
+  options: string[];
+  createdBy: number;
+  deadline?: string | null;
+  allowMultipleSelections?: boolean;
+}) => {
+  const response = await api.post('/polls/create', pollData);
+  return response.data;
+};
+
+export const voteOnPoll = async (pollId: number, voteData: { userId: number; optionIndex: number }) => {
+  const response = await api.post(`/polls/vote/${pollId}`, voteData);
+  return response.data;
+};
+
+export const getUserVotes = async (pollId: number, userId: number) => {
+  const response = await api.get(`/polls/userVote/${pollId}/${userId}`);
+  return response.data;
+};
+
+export const getPollStatistics = async (pollId: number) => {
+  const response = await api.get(`/polls/statistics/${pollId}`);
+  return response.data;
+};
+
+// Poll Management
+export const updatePoll = async (pollId: number, pollData: {
+  title: string;
+  description: string;
+  category: string;
+  options: string[];
+  deadline?: string | null;
+  allowMultipleSelections?: boolean;
+}) => {
+  const response = await api.put(`/polls/update/${pollId}`, pollData);
+  return response.data;
+}
+
+export const deletePoll = async (pollId: number) => {
+  const response = await api.delete(`/polls/delete/${pollId}`);
+  return response.data;
+}
+
+// User Management
+export const getAllUsers = async () => {
+  const response = await api.get('/users/getAll');
+  return response.data;
+};
+
+export const updateUserRole = async (userId: number, role: string) => {
+  const response = await api.put(`/users/${userId}/role`, { role });
+  return response.data;
+};
+
+export const deleteUser = async (userId: number) => {
+  const response = await api.delete(`/users/${userId}`);
+  return response.data;
+};
+
+// Incident Management
+export const verifyIncident = async (incidentId: number) => {
+  const response = await api.put(`/incidents/verify/${incidentId}`, { status: 'Verified' });
+  return response.data;
+};
+
+export const deleteIncident = async (incidentId: number) => {
+  const response = await api.delete(`/incidents/${incidentId}`);
+  return response.data;
+};
+
+export const updateIncident = async (incidentId: number, data: {
+  title: string;
+  description: string;
+  category: string;
+}) => {
+  const response = await api.put(`/incidents/update/${incidentId}`, data);
+  return response.data;
 };
 
 export default api

@@ -2,27 +2,38 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Vote, AlertTriangle, MessageSquare, Users, Settings, Briefcase, Bot } from "lucide-react"
+import { LayoutDashboard, Vote, AlertTriangle, MessageSquare, Users, Settings, Briefcase, Bot, Shield } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 
-const sidebarItems = [
+const commonItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Incidents", href: "/incidents", icon: AlertTriangle },
     { name: "Opinion Polls", href: "/polls", icon: Vote },
     { name: "AI Explainer", href: "/ai-explainer", icon: Bot },
     { name: "Bills Chat", href: "/bills-chat", icon: MessageSquare },
     { name: "Projects Chat", href: "/projects-chat", icon: Briefcase },
-    { name: "Leader Dashboard", href: "/leader-dashboard", icon: Users },
-    { name: "Community", href: "/community", icon: Users },
     { name: "Settings", href: "/settings", icon: Settings },
 ]
 
+type UserRole = 'admin' | 'leader';
+
+const roleSpecificItems: Record<UserRole, { name: string; href: string; icon: React.ComponentType }[]> = {
+    admin: [
+        { name: "Admin Dashboard", href: "/admin", icon: Shield }
+    ],
+    leader: [
+        { name: "Leader Dashboard", href: "/leader-dashboard", icon: Users }
+    ]
+}
+
 const Sidebar = () => {
     const pathname = usePathname()
-    const { user } = useAuth() // Get authentication status
+    const { user } = useAuth()
 
-    // Don't render sidebar if the user isn't logged in
     if (!user) return null;
+    const userRoleItems = user.role && roleSpecificItems[user.role as UserRole] || [];
+
+    const sidebarItems = [...commonItems, ...userRoleItems];
 
     return (
         <aside className="w-64 bg-background border-r h-screen">
