@@ -9,10 +9,9 @@ const commonItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Incidents", href: "/incidents", icon: AlertTriangle },
     { name: "Opinion Polls", href: "/polls", icon: Vote },
-    { name: "AI Explainer", href: "/ai-explainer", icon: Bot },
-    { name: "Bills Chat", href: "/bills-chat", icon: MessageSquare },
-    { name: "Projects Chat", href: "/projects-chat", icon: Briefcase },
-    { name: "Settings", href: "/settings", icon: Settings },
+    // { name: "AI Explainer", href: "/ai-explainer", icon: Bot },
+    { name: "Bills Chat", href: "/bills-chat", icon: Bot },
+    // { name: "Settings", href: "/settings", icon: Settings },
 ]
 
 type UserRole = 'admin' | 'leader';

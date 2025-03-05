@@ -117,6 +117,16 @@ export const getPollStatistics = async (pollId: number) => {
   return response.data;
 };
 
+export const getRecentPolls = async (limit = 5) => {
+  const response = await api.get(`/polls/recent?limit=${limit}`);
+  return response.data;
+};
+
+export const getRecentIncidents = async (limit = 5) => {
+  const response = await api.get(`/incidents/recent?limit=${limit}`);
+  return response.data;
+};
+
 // Poll Management
 export const updatePoll = async (pollId: number, pollData: {
   title: string;
@@ -169,6 +179,32 @@ export const updateIncident = async (incidentId: number, data: {
 }) => {
   const response = await api.put(`/incidents/update/${incidentId}`, data);
   return response.data;
+};
+
+export const fetchAIResponse = async (billName: string, userQuery: string) => {
+  try {
+    const response = await api.post('/chat/bill-chat', { 
+      bill: billName, 
+      query: userQuery 
+    });
+    return {
+      response: response.data.response,
+      fromCache: response.data.fromCache || false
+    };
+  } catch (error) {
+    console.error('Error querying bills AI:', error);
+    throw error;
+  }
+}
+
+export const getBillsList = async () => {
+  try {
+    const response = await api.get('/bills/getAll');
+    return response.data;
+  } catch (error) {
+    console.error('Error in getBillsList:', error);
+    throw error;
+  }
 };
 
 export default api

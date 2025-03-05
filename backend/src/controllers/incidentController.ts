@@ -121,3 +121,77 @@ export const getIncidentById = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+export const verifyIncident = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        
+        await executeStoredProcedure('VerifyIncident', { id });
+        
+        res.json({ message: 'Incident verified successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export const deleteIncident = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        
+        await executeStoredProcedure('DeleteIncident', { id });
+        
+        res.json({ message: 'Incident deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export const updateIncident = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { title, description, category } = req.body;
+        
+        await executeStoredProcedure('UpdateIncident', {
+            id: parseInt(id, 10),
+            title,
+            description,
+            category,
+            status: req.body.status || 'Unverified'
+        });
+        
+        res.json({ message: 'Incident updated successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export const getRecentIncidents = async (req: Request, res: Response) => {
+    try {
+        const limit = parseInt(req.query.limit as string) || 5;
+        
+        const result = await executeStoredProcedure('GetRecentIncidents', { limit });
+        
+        // Create array to hold incidents with media
+        const incidentsWithMedia = [];
+        
+        // For each incident, fetch its media
+        for (const incident of result.recordset) {
+            const mediaResult = await executeStoredProcedure('GetMediaByIncidentId', {
+                incidentId: incident.id
+            });
+            
+            incidentsWithMedia.push({
+                ...incident,
+                media: mediaResult.recordset
+            });
+        }
+        
+        res.json(incidentsWithMedia);
+    } catch (error) {
+        console.error('Get recent incidents error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
