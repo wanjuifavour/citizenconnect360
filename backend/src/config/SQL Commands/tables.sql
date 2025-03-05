@@ -84,3 +84,15 @@ FROM
 GROUP BY
     pollId;
 GO
+
+-- Create BillCache Table
+CREATE TABLE BillCache (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    billName NVARCHAR(255) NOT NULL,
+    query NVARCHAR(900) NOT NULL,
+    response NVARCHAR(MAX) NOT NULL,
+    createdAt DATETIME DEFAULT GETDATE(),
+);
+CREATE INDEX idx_billCache_billName_query ON BillCache (billName, query);
+CREATE INDEX idx_billCache_createdAt ON BillCache (createdAt);
+GO
