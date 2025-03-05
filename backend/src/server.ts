@@ -6,6 +6,8 @@ import { connectDB } from './config/sqlServer';
 import userRoutes from './routes/userRoutes';
 import incidentRoutes from './routes/incidentRoutes';
 import pollRoutes from './routes/pollRoutes';
+import billsRoutes from './routes/billsRoutes';
+import chatRoutes from './routes/chatRoutes';
 
 dotenv.config();
 
@@ -20,6 +22,8 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/users', userRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/polls', pollRoutes);
+app.use('/api/bills', billsRoutes);
+app.use('/api/chat', chatRoutes);
 
 const PORT = process.env.PORT || 8085;
 

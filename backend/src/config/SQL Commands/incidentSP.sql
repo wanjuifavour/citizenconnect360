@@ -113,3 +113,24 @@ BEGIN
         i.createdAt DESC
 END
 GO
+
+-- Get Recent Incidents
+CREATE OR ALTER PROCEDURE GetRecentIncidents
+    @limit INT = 5
+AS
+BEGIN
+    SELECT TOP (@limit)
+        i.id, 
+        i.title, 
+        i.description, 
+        i.category, 
+        i.status, 
+        i.reportedBy, 
+        i.createdAt, 
+        i.updatedAt
+    FROM 
+        Incident i
+    ORDER BY 
+        i.createdAt DESC;
+END;
+GO

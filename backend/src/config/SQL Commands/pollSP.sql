@@ -207,3 +207,26 @@ BEGIN
         optionIndex;
 END;
 GO
+
+-- Get Recent Polls
+CREATE PROCEDURE GetRecentPolls
+    @limit INT = 5
+AS
+BEGIN
+    -- Update status for polls with passed deadlines
+    UPDATE Poll
+    SET status = 'closed'
+    WHERE status = 'open' AND deadline IS NOT NULL AND deadline < GETDATE();
+    
+    -- Get most recent polls with participant counts
+    SELECT TOP (@limit)
+        p.*, 
+        ISNULL(pp.participantCount, 0) AS participantCount
+    FROM 
+        Poll p
+    LEFT JOIN 
+        PollParticipants pp ON p.id = pp.pollId
+    ORDER BY 
+        p.createdAt DESC;
+END;
+GO

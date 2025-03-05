@@ -163,6 +163,25 @@ export const getPollStatistics = async (req: Request, res: Response) => {
     }
 };
 
+export const getRecentPolls = async (req: Request, res: Response) => {
+    try {
+        const limit = parseInt(req.query.limit as string) || 5;
+        
+        const result = await executeStoredProcedure('GetRecentPolls', { limit });
+        
+        // Parse the options JSON from each poll record
+        const polls = result.recordset.map(poll => ({
+            ...poll,
+            options: JSON.parse(poll.options)
+        }));
+        
+        res.json(polls);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 export const deletePoll = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;

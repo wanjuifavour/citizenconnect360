@@ -167,3 +167,31 @@ export const updateIncident = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+export const getRecentIncidents = async (req: Request, res: Response) => {
+    try {
+        const limit = parseInt(req.query.limit as string) || 5;
+        
+        const result = await executeStoredProcedure('GetRecentIncidents', { limit });
+        
+        // Create array to hold incidents with media
+        const incidentsWithMedia = [];
+        
+        // For each incident, fetch its media
+        for (const incident of result.recordset) {
+            const mediaResult = await executeStoredProcedure('GetMediaByIncidentId', {
+                incidentId: incident.id
+            });
+            
+            incidentsWithMedia.push({
+                ...incident,
+                media: mediaResult.recordset
+            });
+        }
+        
+        res.json(incidentsWithMedia);
+    } catch (error) {
+        console.error('Get recent incidents error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
