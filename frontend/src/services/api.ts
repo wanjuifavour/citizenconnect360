@@ -187,7 +187,10 @@ export const fetchAIResponse = async (billName: string, userQuery: string) => {
       bill: billName, 
       query: userQuery 
     });
-    return response.data.response;
+    return {
+      response: response.data.response,
+      fromCache: response.data.fromCache || false
+    };
   } catch (error) {
     console.error('Error querying bills AI:', error);
     throw error;
