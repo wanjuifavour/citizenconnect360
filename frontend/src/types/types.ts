@@ -11,3 +11,9 @@ export interface AuthContextType {
     register: (username: string, email: string, password: string) => Promise<void>
     logout: () => void
 }
+
+export interface Bill {
+    id: number;
+    name: string;
+    filename: string;
+}
