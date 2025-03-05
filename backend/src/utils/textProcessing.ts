@@ -13,7 +13,7 @@ export function truncateContent(content: string, maxTokens: number): string {
 export function chunkContent(content: string, chunkSize: number = 4000): string[] {
     const chunks = [];
     let currentChunk = "";
-    
+
     // Split by paragraphs
     const paragraphs = content.split(/\n\s*\n/);
 
@@ -38,4 +38,12 @@ export function chunkContent(content: string, chunkSize: number = 4000): string[
 export function estimateTokenCount(text: string): number {
     // Simple estimation: ~4 chars per token for English
     return Math.ceil(text.length / 4);
+}
+
+export function normalizeQuery(query: string): string {
+    // Convert to lowercase, trim spaces, and remove punctuation
+    return query.toLowerCase()
+        .trim()
+        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
+        .replace(/\s{2,}/g, " ");
 }

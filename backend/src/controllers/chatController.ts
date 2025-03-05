@@ -4,6 +4,7 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 import { truncateContent, chunkContent } from '../utils/textProcessing';
 import { executeStoredProcedure } from '../config/sqlServer';
+import { normalizeQuery } from '../utils/textProcessing';
 
 dotenv.config();
 
@@ -24,9 +25,10 @@ export const chatWithBill = async (req: Request, res: Response) => {
 
         // Check cache first
         try {
+            const normalizedQuery = normalizeQuery(query);
             const cacheResult = await executeStoredProcedure('GetCachedResponse', {
                 billName: bill,
-                query: query
+                query: normalizedQuery
             });
 
             if (cacheResult.recordset.length > 0) {

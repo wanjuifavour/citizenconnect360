@@ -89,10 +89,11 @@ GO
 CREATE TABLE BillCache (
     id INT IDENTITY(1,1) PRIMARY KEY,
     billName NVARCHAR(255) NOT NULL,
-    query NVARCHAR(900) NOT NULL,
+    query NVARCHAR(MAX) NOT NULL,
+    queryShort NVARCHAR(900) NULL,
     response NVARCHAR(MAX) NOT NULL,
-    createdAt DATETIME DEFAULT GETDATE(),
+    createdAt DATETIME DEFAULT GETDATE()
 );
-CREATE INDEX idx_billCache_billName_query ON BillCache (billName, query);
+CREATE INDEX idx_billCache_billName_query ON BillCache (billName, queryShort);
 CREATE INDEX idx_billCache_createdAt ON BillCache (createdAt);
 GO
