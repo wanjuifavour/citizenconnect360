@@ -18,17 +18,11 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
+    - name: Download build output
+      uses: actions/download-artifact@v3
       with:
-        node-version: '18'
-        
-    - name: Build frontend
-      shell: bash
-      run: |
-        cd frontend
-        npm ci
-        npm run build
+        name: frontend-build
+        path: frontend/.next
         
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
@@ -40,6 +34,19 @@ runs:
     - name: Deploy to S3
       shell: bash
       run: |
-        aws s3 sync frontend/.next/static s3://${{ inputs.s3-bucket }}/_next/static/ --delete
-        aws s3 sync frontend/public s3://${{ inputs.s3-bucket }}/ --delete
-        aws s3 sync frontend/.next/server/pages s3://${{ inputs.s3-bucket }}/ --delete
+        cd frontend
+        # Sync static assets
+        aws s3 sync .next/static s3://${{ inputs.s3-bucket }}/_next/static/ --delete
+        
+        # Sync public files
+        aws s3 sync public s3://${{ inputs.s3-bucket }}/ --delete
+        
+        # Upload server-side rendered pages (if you're using export)
+        if [ -d ".next/server/pages" ]; then
+          aws s3 sync .next/server/pages s3://${{ inputs.s3-bucket }}/ --delete
+        fi
+        
+        # For app directory routes (adjust if needed)
+        if [ -d ".next/server/app" ]; then
+          aws s3 sync .next/server/app s3://${{ inputs.s3-bucket }}/app/ --delete
+        fi

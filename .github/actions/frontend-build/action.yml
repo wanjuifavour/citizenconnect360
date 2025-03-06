@@ -1,17 +1,7 @@
 name: 'Build Frontend'
-description: 'Builds the frontend Docker image and pushes to Docker Hub'
+description: 'Builds the frontend'
 
 inputs:
-  docker-username:
-    description: 'DockerHub username'
-    required: true
-  docker-token:
-    description: 'DockerHub token'
-    required: true
-  image-tag:
-    description: 'Tag for the Docker image'
-    required: true
-    default: 'latest'
   backend-url:
     description: 'Backend API URL to use in the build'
     required: true
@@ -19,22 +9,35 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Login to DockerHub
-      uses: docker/login-action@v2
+    - name: Setup Node.jsno
+      uses: actions/setup-node@v3
       with:
-        username: ${{ inputs.docker-username }}
-        password: ${{ inputs.docker-token }}
+        node-version: '23.7.0'
+        cache: 'npm'
+        cache-dependency-path: 'frontend/package-lock.json'
+        
+    - name: Create env file
+      shell: bash
+      run: |
+        cd frontend
+        echo "NEXT_PUBLIC_API_URL=${{ inputs.backend-url }}" > .env.production
+        echo "OPENAI_API_KEY=${{ env.OPENAI_API_KEY }}" >> .env.production
     
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    
-    - name: Build and push frontend Docker image
-      uses: docker/build-push-action@v4
+    - name: Install dependencies
+      shell: bash
+      run: |
+        cd frontend
+        npm ci
+        
+    - name: Build frontend
+      shell: bash
+      run: |
+        cd frontend
+        npm run build
+        
+    - name: Store build output
+      uses: actions/upload-artifact@v3
       with:
-        context: ./frontend
-        build-args: |
-          NEXT_PUBLIC_BACKEND_URL=${{ inputs.backend-url }}
-        push: true
-        tags: ${{ inputs.docker-username }}/citizen-connect-frontend:${{ inputs.image-tag }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        name: frontend-build
+        path: frontend/.next
+        retention-days: 1

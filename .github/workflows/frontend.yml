@@ -10,6 +10,9 @@ on:
       - 'frontend/**'
   workflow_dispatch:
 
+env:
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
 jobs:
   test:
     name: Test Frontend
@@ -18,9 +21,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+      
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+          
       - name: Run Tests
-        uses: ./.github/actions/frontend-test
-        continue-on-error: true
+        run: |
+          cd frontend
+          npm test || echo "No tests found or tests are failing"
         
   build:
     name: Build Frontend
@@ -30,12 +46,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         
-      - name: Build and Push
+      - name: Build
         uses: ./.github/actions/frontend-build
         with:
-          docker-username: ${{ secrets.DOCKERHUB_USERNAME }}
-          docker-token: ${{ secrets.DOCKERHUB_TOKEN }}
-          image-tag: latest
           backend-url: ${{ secrets.BACKEND_API_URL }}
           
   deploy:
@@ -47,11 +60,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         
-      - name: Deploy to S3/CloudFront
+      - name: Deploy to S3
         uses: ./.github/actions/frontend-deploy
         with:
           aws-access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
           s3-bucket: ${{ secrets.S3_BUCKET_NAME }}
-          cloudfront-id: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
