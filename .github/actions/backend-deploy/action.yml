@@ -33,6 +33,10 @@ inputs:
   jwt-secret:
     description: 'JWT secret'
     required: true
+  openai-api-key:
+    description: 'OpenAI API Key'
+    required: false
+    default: ''
   image-tag:
     description: 'Docker image tag to deploy'
     required: true
@@ -59,6 +63,7 @@ runs:
             -e DB_USER=${{ inputs.rds-username }} \
             -e DB_PASSWORD=${{ inputs.rds-password }} \
             -e JWT_SECRET=${{ inputs.jwt-secret }} \
+            -e OPENAI_API_KEY="${{ inputs.openai-api-key }}" \
             -e NODE_ENV=production \
             -e PORT=8000 \
             -v /home/ec2-user/uploads:/app/uploads \
