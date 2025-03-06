@@ -53,7 +53,7 @@ runs:
           docker rm citizen-connect-backend || true
           docker run -d --name citizen-connect-backend \
             -p 8000:8000 \
-            -e DB_HOST=${{ inputs.rds-host }} \
+            -e DB_SERVER=${{ inputs.rds-host }} \
             -e DB_PORT=${{ inputs.rds-port }} \
             -e DB_NAME=${{ inputs.rds-db-name }} \
             -e DB_USER=${{ inputs.rds-username }} \
