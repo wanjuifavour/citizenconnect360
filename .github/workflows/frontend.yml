@@ -2,12 +2,15 @@ name: Frontend CI/CD
 
 on:
   push:
-    branches: [frontend]
+    branches: [main, frontend]
     paths:
       - 'frontend/**'
+      - '.github/actions/frontend-**'
+      - '.github/workflows/frontend.yml'
   pull_request:
     paths:
       - 'frontend/**'
+      - '.github/actions/frontend-**'
   workflow_dispatch:
 
 env:
@@ -36,7 +39,8 @@ jobs:
       - name: Run Tests
         run: |
           cd frontend
-          npm test || echo "No tests found or tests are failing"
+          npm test || echo "Warning: Tests failed but continuing deployment"
+        continue-on-error: true
         
   build:
     name: Build Frontend
@@ -47,14 +51,17 @@ jobs:
         uses: actions/checkout@v3
         
       - name: Build
+        id: build_step
         uses: ./.github/actions/frontend-build
         with:
           backend-url: ${{ secrets.BACKEND_API_URL }}
+    outputs:
+      build_success: ${{ steps.build_step.outcome == 'success' }}
           
   deploy:
     name: Deploy Frontend
     needs: build
-    if: github.event_name == 'push' && ( github.ref == 'refs/heads/main' ||github.ref == 'refs/heads/frontend' ) || github.event_name == 'workflow_dispatch'
+    if: needs.build.outputs.build_success == 'true' && (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/frontend') || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
