@@ -48,10 +48,10 @@ runs:
         username: ${{ inputs.ec2-username }}
         key: ${{ inputs.ec2-key }}
         script: |
-          docker pull ${{ inputs.docker-username }}/citizen-connect-backend:${{ inputs.image-tag }}
-          docker stop citizen-connect-backend || true
-          docker rm citizen-connect-backend || true
-          docker run -d --name citizen-connect-backend \
+          sudo docker pull ${{ inputs.docker-username }}/citizen-connect-backend:${{ inputs.image-tag }}
+          sudo docker stop citizen-connect-backend || true
+          sudo docker rm citizen-connect-backend || true
+          sudo docker run -d --name citizen-connect-backend \
             -p 8000:8000 \
             -e DB_SERVER=${{ inputs.rds-host }} \
             -e DB_PORT=${{ inputs.rds-port }} \
