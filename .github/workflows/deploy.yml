@@ -96,7 +96,7 @@ jobs:
   frontend_build:
     name: Build Frontend
     needs: frontend_test
-    if: success() || failure() # Continue even if tests fail
+    if: success() || failure()
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
