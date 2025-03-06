@@ -7,7 +7,6 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 RUN npm install -g ts-node typescript
-RUN npx tsc init
 
 # Copy app source code
 COPY . .
