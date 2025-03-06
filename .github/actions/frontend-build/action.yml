@@ -1,0 +1,43 @@
+name: 'Build Frontend'
+description: 'Builds the frontend'
+
+inputs:
+  backend-url:
+    description: 'Backend API URL to use in the build'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '23.7.0'
+        cache: 'npm'
+        cache-dependency-path: 'frontend/package-lock.json'
+        
+    - name: Create env file
+      shell: bash
+      run: |
+        cd frontend
+        echo "NEXT_PUBLIC_API_URL=${{ inputs.backend-url }}" > .env.production
+        echo "OPENAI_API_KEY=${{ env.OPENAI_API_KEY }}" >> .env.production
+    
+    - name: Install dependencies
+      shell: bash
+      run: |
+        cd frontend
+        npm ci
+        
+    - name: Build frontend
+      shell: bash
+      run: |
+        cd frontend
+        npm run build
+        
+    - name: Store build output
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-build
+        path: frontend/out
+        retention-days: 1

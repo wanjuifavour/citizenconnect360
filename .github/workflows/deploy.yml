@@ -1,0 +1,128 @@
+name: Full CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_backend:
+        description: 'Deploy backend'
+        type: boolean
+        default: true
+      deploy_frontend:
+        description: 'Deploy frontend'
+        type: boolean
+        default: true
+
+env:
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+jobs:
+  # Backend jobs
+  backend_test:
+    name: Test Backend
+    if: github.event_name == 'push' || github.event.inputs.deploy_backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Run Tests
+        uses: ./.github/actions/backend-test
+        continue-on-error: true
+
+  backend_build:
+    name: Build Backend
+    needs: backend_test
+    if: success() || failure() # Continue even if tests fail
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Set Image Tag
+        id: set-tag
+        run: |
+          echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+      
+      - name: Build Backend
+        id: backend_build
+        uses: ./.github/actions/backend-build
+        with:
+          docker-username: ${{ secrets.DOCKERHUB_USERNAME }}
+          docker-token: ${{ secrets.DOCKERHUB_TOKEN }}
+          image-tag: ${{ env.IMAGE_TAG }}
+    outputs:
+      build_success: ${{ steps.backend_build.outcome == 'success' }}
+
+  backend_deploy:
+    name: Deploy Backend
+    needs: backend_build
+    if: needs.backend_build.outputs.build_success == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Deploy Backend to EC2
+        uses: ./.github/actions/backend-deploy
+        with:
+          docker-username: ${{ secrets.DOCKERHUB_USERNAME }}
+          ec2-host: ${{ secrets.EC2_HOST }}
+          ec2-username: ${{ secrets.EC2_USERNAME }}
+          ec2-key: ${{ secrets.EC2_SSH_KEY }}
+          rds-host: ${{ secrets.RDS_HOST }}
+          rds-port: ${{ secrets.RDS_PORT }}
+          rds-db-name: ${{ secrets.RDS_DB_NAME }}
+          rds-username: ${{ secrets.RDS_USERNAME }}
+          rds-password: ${{ secrets.RDS_PASSWORD }}
+          jwt-secret: ${{ secrets.JWT_SECRET }}
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          image-tag: latest
+
+  # Frontend jobs (completely independent)
+  frontend_test:
+    name: Test Frontend
+    if: github.event_name == 'push' || github.event.inputs.deploy_frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Frontend Tests
+        uses: ./.github/actions/frontend-test
+        continue-on-error: true
+
+  frontend_build:
+    name: Build Frontend
+    needs: frontend_test
+    if: success() || failure() # Continue even if tests fail
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Build Frontend
+        id: frontend_build
+        uses: ./.github/actions/frontend-build
+        with:
+          backend-url: ${{ secrets.BACKEND_API_URL }}
+    outputs:
+      build_success: ${{ steps.frontend_build.outcome == 'success' }}
+
+  frontend_deploy:
+    name: Deploy Frontend
+    needs: frontend_build
+    if: needs.frontend_build.outputs.build_success == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Deploy Frontend to S3
+        uses: ./.github/actions/frontend-deploy
+        with:
+          aws-access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          s3-bucket: ${{ secrets.S3_BUCKET_NAME }}

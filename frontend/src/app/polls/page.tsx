@@ -77,7 +77,7 @@ export default function PollsPage() {
         
         if (user) {
             try {
-                const voteData = await getUserVotes(poll.id, user.id)
+                const voteData = await getUserVotes(poll.id, parseInt(user.id))
                 setUserVotes(voteData)
                 
                 if (voteData.hasVoted) {
@@ -123,7 +123,7 @@ export default function PollsPage() {
             // Vote on each selected option
             for (const optionIndex of votingOptions) {
                 await voteOnPoll(selectedPoll.id, {
-                    userId: user.id,
+                    userId: parseInt(user.id),
                     optionIndex
                 })
             }
@@ -131,7 +131,7 @@ export default function PollsPage() {
             toast.success("Vote submitted successfully")
             
             // Update user votes
-            const voteData = await getUserVotes(selectedPoll.id, user.id)
+            const voteData = await getUserVotes(selectedPoll.id, parseInt(user.id))
             setUserVotes(voteData)
             
             // Refresh poll data to update participant count

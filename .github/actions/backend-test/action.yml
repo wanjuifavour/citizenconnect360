@@ -1,0 +1,17 @@
+name: 'Test Backend'
+description: 'Run tests for the backend application'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install dependencies
+      shell: bash
+      run: |
+        cd backend
+        npm ci
+        
+    - name: Run tests
+      shell: bash
+      run: |
+        cd backend
+        npm test
