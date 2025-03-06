@@ -1,0 +1,19 @@
+# Exclude node modules, they'll be installed in the container
+node_modules
+
+# Exclude development files
+.env
+.env.*
+*.log
+.git
+.gitignore
+.vscode
+coverage
+
+# Exclude tests
+tests
+**/*.test.ts
+**/*.spec.ts
+
+# Exclude any local uploads
+uploads/*
