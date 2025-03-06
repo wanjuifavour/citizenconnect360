@@ -1,0 +1,65 @@
+name: 'Deploy Backend'
+description: 'Deploys backend to EC2 instance'
+
+inputs:
+  docker-username:
+    description: 'DockerHub username'
+    required: true
+  ec2-host:
+    description: 'EC2 host address'
+    required: true
+  ec2-username:
+    description: 'EC2 username'
+    required: true
+  ec2-key:
+    description: 'EC2 SSH private key'
+    required: true
+  rds-host:
+    description: 'RDS host address'
+    required: true
+  rds-port:
+    description: 'RDS port'
+    required: true
+    default: '1433'
+  rds-db-name:
+    description: 'RDS database name'
+    required: true
+  rds-username:
+    description: 'RDS username'
+    required: true
+  rds-password:
+    description: 'RDS password'
+    required: true
+  jwt-secret:
+    description: 'JWT secret'
+    required: true
+  image-tag:
+    description: 'Docker image tag to deploy'
+    required: true
+    default: 'latest'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ inputs.ec2-host }}
+        username: ${{ inputs.ec2-username }}
+        key: ${{ inputs.ec2-key }}
+        script: |
+          docker pull ${{ inputs.docker-username }}/citizen-connect-backend:${{ inputs.image-tag }}
+          docker stop citizen-connect-backend || true
+          docker rm citizen-connect-backend || true
+          docker run -d --name citizen-connect-backend \
+            -p 8000:8000 \
+            -e DB_HOST=${{ inputs.rds-host }} \
+            -e DB_PORT=${{ inputs.rds-port }} \
+            -e DB_NAME=${{ inputs.rds-db-name }} \
+            -e DB_USER=${{ inputs.rds-username }} \
+            -e DB_PASSWORD=${{ inputs.rds-password }} \
+            -e JWT_SECRET=${{ inputs.jwt-secret }} \
+            -e NODE_ENV=production \
+            -e PORT=8000 \
+            -v /home/ec2-user/uploads:/app/uploads \
+            ${{ inputs.docker-username }}/citizen-connect-backend:${{ inputs.image-tag }}

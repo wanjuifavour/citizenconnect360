@@ -89,7 +89,7 @@ export default function ReportIncidentPage() {
             setMediaFiles([])
             router.push('/incidents')
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error reporting incident:', error)
             toast.error(
                 "Error", {

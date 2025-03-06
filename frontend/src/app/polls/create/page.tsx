@@ -78,7 +78,7 @@ export default function CreatePollPage() {
                 description,
                 category,
                 options: filteredOptions,
-                createdBy: user.id,
+                createdBy: Number(user.id),
                 deadline: deadlineDate || null,
                 allowMultipleSelections
             }

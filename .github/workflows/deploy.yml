@@ -1,0 +1,98 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy to production'
+        type: boolean
+        default: false
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Backend Tests
+        uses: ./.github/actions/backend-test
+        # Skip tests on PRs if tests not yet implemented
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        
+      - name: Frontend Tests
+        uses: ./.github/actions/frontend-test
+        # Skip tests on PRs if tests not yet implemented
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+
+  build:
+    name: Build Images
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Set Image Tag
+        id: set-tag
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          else
+            SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+            echo "IMAGE_TAG=pr-$SHORT_SHA" >> $GITHUB_ENV
+          fi
+      
+      - name: Build Backend
+        uses: ./.github/actions/backend-build
+        with:
+          docker-username: ${{ secrets.DOCKERHUB_USERNAME }}
+          docker-token: ${{ secrets.DOCKERHUB_TOKEN }}
+          image-tag: ${{ env.IMAGE_TAG }}
+          
+      - name: Build Frontend
+        uses: ./.github/actions/frontend-build
+        with:
+          docker-username: ${{ secrets.DOCKERHUB_USERNAME }}
+          docker-token: ${{ secrets.DOCKERHUB_TOKEN }}
+          image-tag: ${{ env.IMAGE_TAG }}
+          backend-url: ${{ secrets.BACKEND_API_URL }}
+
+  deploy:
+    name: Deploy to AWS
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event.inputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Deploy Backend to EC2
+        uses: ./.github/actions/backend-deploy
+        with:
+          docker-username: ${{ secrets.DOCKERHUB_USERNAME }}
+          ec2-host: ${{ secrets.EC2_HOST }}
+          ec2-username: ${{ secrets.EC2_USERNAME }}
+          ec2-key: ${{ secrets.EC2_SSH_KEY }}
+          rds-host: ${{ secrets.RDS_HOST }}
+          rds-port: ${{ secrets.RDS_PORT }}
+          rds-db-name: ${{ secrets.RDS_DB_NAME }}
+          rds-username: ${{ secrets.RDS_USERNAME }}
+          rds-password: ${{ secrets.RDS_PASSWORD }}
+          jwt-secret: ${{ secrets.JWT_SECRET }}
+          image-tag: latest
+          
+      - name: Deploy Frontend to S3
+        uses: ./.github/actions/frontend-deploy
+        with:
+          aws-access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          s3-bucket: ${{ secrets.S3_BUCKET_NAME }}
