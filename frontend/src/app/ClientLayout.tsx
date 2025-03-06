@@ -10,7 +10,7 @@ import Sidebar from "@/components/layout/Sidebar"
 import { usePathname, useSearchParams } from "next/navigation"
 import { Toaster } from "@/components/ui/sonner"
 import { useAuth } from "@/lib/auth"
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext, useState, useEffect, Suspense } from "react"
 import Loading from "@/components/Loading"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -30,6 +30,19 @@ export const useLoading = () => {
   return context;
 };
 
+// Separate component that uses navigation hooks
+function RouteChangeHandler({ setIsLoading }: { setIsLoading: React.Dispatch<React.SetStateAction<boolean>> }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Reset loading state on route change
+  useEffect(() => {
+    setIsLoading(false);
+  }, [pathname, searchParams, setIsLoading]);
+
+  return null;
+}
+
 interface ClientLayoutProps {
   children: React.ReactNode;
 }
@@ -37,13 +50,6 @@ interface ClientLayoutProps {
 export default function ClientLayout({ children }: ClientLayoutProps) {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  // Reset loading state on route change
-  useEffect(() => {
-    setIsLoading(false);
-  }, [pathname, searchParams]);
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -64,6 +70,9 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
               </div>
               {/* <Footer /> */}
               <Toaster />
+              <Suspense fallback={null}>
+                <RouteChangeHandler setIsLoading={setIsLoading} />
+              </Suspense>
             </div>
           </LoadingContext.Provider>
         </ThemeProvider>
