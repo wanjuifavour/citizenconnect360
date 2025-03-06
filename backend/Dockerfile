@@ -5,7 +5,9 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci
+RUN npm install -g ts-node typescript
+RUN npx tsc
 
 # Copy app source code
 COPY . .
