@@ -36,7 +36,7 @@ runs:
         npm run build
         
     - name: Store build output
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: frontend-build
         path: frontend/.next
