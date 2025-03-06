@@ -37,6 +37,3 @@ runs:
         cd frontend
         # Sync all static files from the out directory
         aws s3 sync out/ s3://${{ inputs.s3-bucket }}/ --delete
-        
-        # Sync public files (in case there are any files not included in the build)
-        aws s3 sync public/ s3://${{ inputs.s3-bucket }}/ --delete
