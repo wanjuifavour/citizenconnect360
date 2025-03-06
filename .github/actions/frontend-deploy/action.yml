@@ -22,7 +22,7 @@ runs:
       uses: actions/download-artifact@v4
       with:
         name: frontend-build
-        path: frontend/.next
+        path: frontend/out
         
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
@@ -35,18 +35,8 @@ runs:
       shell: bash
       run: |
         cd frontend
-        # Sync static assets
-        aws s3 sync .next/static s3://${{ inputs.s3-bucket }}/_next/static/ --delete
+        # Sync all static files from the out directory
+        aws s3 sync out/ s3://${{ inputs.s3-bucket }}/ --delete
         
-        # Sync public files
-        aws s3 sync public s3://${{ inputs.s3-bucket }}/ --delete
-        
-        # Upload server-side rendered pages (if you're using export)
-        if [ -d ".next/server/pages" ]; then
-          aws s3 sync .next/server/pages s3://${{ inputs.s3-bucket }}/ --delete
-        fi
-        
-        # For app directory routes (adjust if needed)
-        if [ -d ".next/server/app" ]; then
-          aws s3 sync .next/server/app s3://${{ inputs.s3-bucket }}/app/ --delete
-        fi
+        # Sync public files (in case there are any files not included in the build)
+        aws s3 sync public/ s3://${{ inputs.s3-bucket }}/ --delete
